@@ -55,53 +55,39 @@ app.get('/users', async function(req, res) {
   }
 });
 
-app.use(async function(req, res, next) {
-  try {
-    console.log('Middleware after the get /users');
-    
-    if (req.method === 'GET' && req.originalUrl === '/users') {
-      console.log(`Request to /users complete. Status: ${res.statusCode}`)
-    }
-
-    await next();
-
-  } catch (err) {
-    console.error('Error in post-processing', err)
-  }
-});
 
 // Post User - aka register 
 app.post('/register', async function(req, res) {
   try {
     console.log('req.body', req.body)
     const { username, password } = req.body; 
-
+    
     const query = await req.db.query(
       `INSERT INTO users (username, password)
-       VALUES (:username, :password)`, 
-       {username, password}
-    ); 
-
-    const jwtEncodedUser = jsonwebtoken.sign(
-      { userId: username.insertId, ...req.body}, 
-      process.env.JWT_KEY
-    ); 
-
-    res.json({ success: true, message: 'User successfully registered', data: { username, password }, jwt: jwtEncodedUser})
-  } catch (err) {
-    res.json({ success: false, message: err, data: null })
-  }
-}); 
-
+      VALUES (:username, :password)`, 
+      {username, password}
+      ); 
+      
+      const jwtEncodedUser = jsonwebtoken.sign(
+        { userId: username.insertId, ...req.body}, 
+        process.env.JWT_KEY
+        ); 
+        
+        res.json({ success: true, message: 'User successfully registered', data: { username, password }, jwt: jwtEncodedUser})
+      } catch (err) {
+        res.json({ success: false, message: err, data: null })
+      }
+    }); 
+    
 // Login 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body; 
-
+  
   const [[user]] = await req.db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password]); 
-
+  
   if (user) {
     const token = jsonwebtoken.sign({ id: user.id, username: user.username }, process.env.JWT_KEY); 
-
+    
     res.json({
       jwt: token, 
       success: true
@@ -109,27 +95,64 @@ app.post('/login', async (req, res) => {
   } else {
     res.send('Username or password incorrect')
   }
-}); 
-
+    }); 
+    
 // Authenticate JWT 
-const authenticateJWT = (req, res, next) => {
+app.use(async function authenticateJWT (req, res, next) {
   const authHeader = req.headers.authorization; 
-
+  
   if (authHeader) {
     const token = authHeader.split(' ')[1]; 
-
+    
     jsonwebtoken.verify(token, process.env.JWT_KEY, (err, user) => {
       if (err) {
         return res.sendStatus(403); 
       }
-
+      
       req.user = user; 
       next(); 
     });
   } else {
     res.sendStatus(401); 
   }
-}; 
+}); 
+    
+// Add Entry 
+// add later - check if any values are undefined before adding to query 
+app.post('/addEntry', async (req, res) => {
+  console.log('req.user', req.user)
+  try {
+    const { 
+      title, 
+      location, 
+      startDate, 
+      endDate, 
+      description, 
+      googleMapsUrl, 
+      imgUrl,
+    } = req.body;
+
+  const { userId } = req.user;
+
+  const [insert] = await req.db.query(
+    `INSERT INTO entries (title, location, startDate, endDate, description, googleMapsUrl, imgUrl, deletedFlag, userId)
+    VALUES (:title, :location, :startDate, :endDate, :description, :googleMapsUrl, :imgUrl, :deletedFlag, :userId )`,
+    { title, 
+      location, 
+      startDate, 
+      endDate, 
+      description, 
+      googleMapsUrl, 
+      imgUrl, 
+      deletedFlag: 0,
+      userId
+    }); 
+
+  res.json({ success: true, message: `Entry successfully added!`})
+  } catch (err) {
+  res.json({ success: false, message: err })
+  }
+});
 
 // Start Express Server 
 app.listen(port, () => console.log(`212 API Example listening on http://localhost:${port}`));
