@@ -55,7 +55,6 @@ app.get('/users', async function(req, res) {
   }
 });
 
-
 // Post User - aka register 
 app.post('/register', async function(req, res) {
   try {
@@ -120,30 +119,29 @@ app.use(async function authenticateJWT (req, res, next) {
 // Add Entry 
 // add later - check if any values are undefined before adding to query 
 app.post('/addEntry', async (req, res) => {
-  console.log('req.user', req.user)
   try {
     const { 
-      title, 
-      location, 
-      startDate, 
-      endDate, 
-      description, 
-      googleMapsUrl, 
-      imgUrl,
+      newTitle, 
+      newLocation, 
+      newStartDate, 
+      newEndDate, 
+      newDescription, 
+      newGoogleMapsUrl, 
+      newImgUrl,
     } = req.body;
 
-  const { userId } = req.user;
+  const userId = req.user.id;
 
   const [insert] = await req.db.query(
     `INSERT INTO entries (title, location, startDate, endDate, description, googleMapsUrl, imgUrl, deletedFlag, userId)
-    VALUES (:title, :location, :startDate, :endDate, :description, :googleMapsUrl, :imgUrl, :deletedFlag, :userId )`,
-    { title, 
-      location, 
-      startDate, 
-      endDate, 
-      description, 
-      googleMapsUrl, 
-      imgUrl, 
+    VALUES (:newTitle, :newLocation, :newStartDate, :newEndDate, :newDescription, :newGoogleMapsUrl, :newImgUrl, :deletedFlag, :userId )`,
+    { newTitle, 
+      newLocation, 
+      newStartDate, 
+      newEndDate, 
+      newDescription, 
+      newGoogleMapsUrl, 
+      newImgUrl, 
       deletedFlag: 0,
       userId
     }); 
@@ -153,6 +151,9 @@ app.post('/addEntry', async (req, res) => {
   res.json({ success: false, message: err })
   }
 });
+
+// Up next - fetch/get endpoint
+// Only display data that is associated with the logged in user! 
 
 // Start Express Server 
 app.listen(port, () => console.log(`212 API Example listening on http://localhost:${port}`));
