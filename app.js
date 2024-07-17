@@ -152,8 +152,20 @@ app.post('/addEntry', async (req, res) => {
   }
 });
 
-// Up next - fetch/get endpoint
-// Only display data that is associated with the logged in user! 
+// Get user entries
+app.get('/home', async function(req, res) {
+  try {
+    const userId = req.user.id;
+    const [entries] = await req.db.query('SELECT * FROM entries WHERE userId = :userId;', { userId }); 
+
+    console.log('entries', entries)
+    res.json({ success: true, message: `Welcome to your data!`, data: entries }); 
+  } catch (err) {
+    console.error(err); 
+    res.status(500).json({ msg: `Server Error: ${err}`})
+  }
+});
+
 
 // Start Express Server 
 app.listen(port, () => console.log(`212 API Example listening on http://localhost:${port}`));
