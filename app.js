@@ -156,9 +156,8 @@ app.post('/addEntry', async (req, res) => {
 app.get('/home', async function(req, res) {
   try {
     const userId = req.user.id;
-    const [entries] = await req.db.query('SELECT * FROM entries WHERE userId = :userId;', { userId }); 
+    const [entries] = await req.db.query('SELECT * FROM entries WHERE userId = :userId AND deletedFlag = 0;', { userId }); 
 
-    console.log('entries', entries)
     res.json({ success: true, message: `Welcome to your data!`, data: entries }); 
   } catch (err) {
     console.error(err); 
@@ -166,6 +165,47 @@ app.get('/home', async function(req, res) {
   }
 });
 
+// Delete an entry 
+app.delete('/home/:id', async (req, res) => {
+  try {
+    const entryId = req.params.id; 
+
+    await req.db.query('UPDATE entries SET deletedFlag = 1 WHERE id = :entryId;', { entryId }); 
+
+    res.json({ success: true, message: `Entry ${entryId} succesfully deleted`});
+  } catch (err) {
+    console.log(err)
+
+    res.json({ success: false, message: `Entry ${entryId} not deleted`})
+  }
+})
+
+// Edit an entry 
+app.post('/home/:id', async (req, res) => {
+  try {
+    const entryId = req.params.id; 
+
+    const { 
+      updTitle,
+      updLocation,
+      updGoogleMapsUrl,
+      updStartDate,
+      updEndDate,
+      updDescription,
+      updImgUrl
+    } = req.body; 
+
+    await req.db.query(`UPDATE entries 
+    SET title = :updTitle, location = :updLocation, googleMapsUrl = :updGoogleMapsUrl, startDate = :updStartDate, endDate = :updEndDate, description = :updDescription, imgUrl = :updImgUrl
+    WHERE id = :entryId;`, { updTitle, updLocation, updGoogleMapsUrl, updStartDate, updEndDate, updDescription, updImgUrl })
+
+    res.json({ success: true, message: `Entry ${entryId} succesfully updated`, data: req.body }); 
+  } catch (err) {
+    console.log(err)
+
+    res.json({ success: false, message: `Entry ${entryId} not updated`})
+  }
+})
 
 // Start Express Server 
 app.listen(port, () => console.log(`212 API Example listening on http://localhost:${port}`));
