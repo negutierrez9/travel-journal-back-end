@@ -181,6 +181,7 @@ app.delete('/home/:id', async (req, res) => {
 })
 
 // Edit an entry 
+// requires all keys to have an updated value, should pull from the auto-filled editor form
 app.post('/home/:id', async (req, res) => {
   try {
     const entryId = req.params.id; 
@@ -195,10 +196,23 @@ app.post('/home/:id', async (req, res) => {
       updImgUrl
     } = req.body; 
 
-    await req.db.query(`UPDATE entries 
-    SET title = :updTitle, location = :updLocation, googleMapsUrl = :updGoogleMapsUrl, startDate = :updStartDate, endDate = :updEndDate, description = :updDescription, imgUrl = :updImgUrl
-    WHERE id = :entryId;`, { updTitle, updLocation, updGoogleMapsUrl, updStartDate, updEndDate, updDescription, updImgUrl })
+    const query = `UPDATE entries SET title = ?, location = ?, googleMapsUrl = ?, startDate = ?, endDate = ?, description = ?, imgUrl = ?
+    WHERE id = ?`;
 
+    const params = [ 
+      updTitle, 
+      updLocation, 
+      updGoogleMapsUrl, 
+      updStartDate, 
+      updEndDate, 
+      updDescription, 
+      updImgUrl,
+      entryId 
+    ];
+
+    await req.db.query(query, params); 
+
+    
     res.json({ success: true, message: `Entry ${entryId} succesfully updated`, data: req.body }); 
   } catch (err) {
     console.log(err)
