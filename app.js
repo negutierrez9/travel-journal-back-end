@@ -58,7 +58,6 @@ app.get('/users', async function(req, res) {
 // Post User - aka register 
 app.post('/register', async function(req, res) {
   try {
-    console.log('req.body', req.body)
     const { username, password } = req.body; 
     
     const query = await req.db.query(
@@ -181,32 +180,33 @@ app.delete('/home/:id', async (req, res) => {
 })
 
 // Edit an entry 
-// requires all keys to have an updated value, should pull from the auto-filled editor form
-app.post('/home/:id', async (req, res) => {
+app.post('/home/editor/:id', async (req, res) => {
   try {
+
     const entryId = req.params.id; 
 
     const { 
-      updTitle,
-      updLocation,
-      updGoogleMapsUrl,
-      updStartDate,
-      updEndDate,
-      updDescription,
-      updImgUrl
+      newTitle,
+      newLocation,
+      newGoogleMapsUrl,
+      newStartDate,
+      newEndDate,
+      newDescription,
+      newImgUrl
     } = req.body; 
+
 
     const query = `UPDATE entries SET title = ?, location = ?, googleMapsUrl = ?, startDate = ?, endDate = ?, description = ?, imgUrl = ?
     WHERE id = ?`;
 
     const params = [ 
-      updTitle, 
-      updLocation, 
-      updGoogleMapsUrl, 
-      updStartDate, 
-      updEndDate, 
-      updDescription, 
-      updImgUrl,
+      newTitle, 
+      newLocation,
+      newGoogleMapsUrl,
+      newStartDate,
+      newEndDate,
+      newDescription,
+      newImgUrl,
       entryId 
     ];
 
@@ -220,6 +220,23 @@ app.post('/home/:id', async (req, res) => {
     res.json({ success: false, message: `Entry ${entryId} not updated`})
   }
 })
+
+// Fetch edited entry
+app.get('/home/editor/:id', async function(req, res) {
+  try {
+
+    const entryId = req.params.id;
+    const userId = req.user.id;
+
+
+    const [entry] = await req.db.query('SELECT * FROM entries WHERE userId = :userId AND id = :entryId;', { userId, entryId }); 
+
+    res.json({ success: true, message: `Currently editing entry ${entryId} for user ${userId}`, data: entry }); 
+  } catch (err) {
+    console.error(err); 
+    res.status(500).json({ msg: `Server Error: ${err}`})
+  }
+});
 
 // Start Express Server 
 app.listen(port, () => console.log(`212 API Example listening on http://localhost:${port}`));
